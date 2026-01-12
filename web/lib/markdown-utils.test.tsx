@@ -51,9 +51,9 @@ describe("stripMarkdown", () => {
     const input =
       'Част от Дианабад\n\n2 януари 2026 г. в 12:50\nбл. 32, 33, 33А,61; ул. "Крум Кюлявков" № 25, бул. "Г. М. Димитров" № 58\n\nОчаквано възстановяване на 4 януари 2026 г. в 12:50';
     const result = stripMarkdown(input);
-    // Whitespace is normalized to single spaces, quotes are HTML-encoded
+    // Whitespace is normalized to single spaces, HTML entities are decoded
     expect(result).toBe(
-      "Част от Дианабад 2 януари 2026 г. в 12:50 бл. 32, 33, 33А,61; ул. &quot;Крум Кюлявков&quot; № 25, бул. &quot;Г. М. Димитров&quot; № 58 Очаквано възстановяване на 4 януари 2026 г. в 12:50"
+      'Част от Дианабад 2 януари 2026 г. в 12:50 бл. 32, 33, 33А,61; ул. "Крум Кюлявков" № 25, бул. "Г. М. Димитров" № 58 Очаквано възстановяване на 4 януари 2026 г. в 12:50'
     );
   });
 
@@ -74,5 +74,60 @@ describe("stripMarkdown", () => {
   it("should handle text without markdown", () => {
     const plain = "Just plain text with no formatting";
     expect(stripMarkdown(plain)).toBe(plain);
+  });
+
+  describe("HTML entity decoding", () => {
+    it("should decode common named entities", () => {
+      expect(stripMarkdown("Text with &quot;quotes&quot;")).toBe(
+        'Text with "quotes"'
+      );
+      expect(stripMarkdown("Text with &amp; ampersand")).toBe(
+        "Text with & ampersand"
+      );
+      expect(stripMarkdown("Text with &lt; and &gt;")).toBe(
+        "Text with < and >"
+      );
+      expect(stripMarkdown("Text with &apos;apostrophe&apos;")).toBe(
+        "Text with 'apostrophe'"
+      );
+      expect(stripMarkdown("Text with &#39;apostrophe&#39;")).toBe(
+        "Text with 'apostrophe'"
+      );
+    });
+
+    it("should decode numeric HTML entities (decimal)", () => {
+      expect(stripMarkdown("Text with &#34;quotes&#34;")).toBe(
+        'Text with "quotes"'
+      );
+      expect(stripMarkdown("Text with &#38; ampersand")).toBe(
+        "Text with & ampersand"
+      );
+      expect(stripMarkdown("Text with &#60; and &#62;")).toBe(
+        "Text with < and >"
+      );
+    });
+
+    it("should decode numeric HTML entities (hexadecimal)", () => {
+      expect(stripMarkdown("Text with &#x22;quotes&#x22;")).toBe(
+        'Text with "quotes"'
+      );
+      expect(stripMarkdown("Text with &#x26; ampersand")).toBe(
+        "Text with & ampersand"
+      );
+      expect(stripMarkdown("Text with &#x3C; and &#x3E;")).toBe(
+        "Text with < and >"
+      );
+    });
+
+    it("should decode multiple entities in the same string", () => {
+      expect(
+        stripMarkdown("&quot;Hello&quot; &amp; &lt;Goodbye&gt;")
+      ).toBe('"Hello" & <Goodbye>');
+    });
+
+    it("should decode entities in markdown text", () => {
+      expect(stripMarkdown("**Bold &quot;text&quot;**")).toBe('Bold "text"');
+      expect(stripMarkdown("*Italic &amp; bold*")).toBe("Italic & bold");
+    });
   });
 });

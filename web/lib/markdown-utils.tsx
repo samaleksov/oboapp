@@ -3,6 +3,40 @@ import type { Components } from "react-markdown";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
+ * Decode HTML entities in text
+ * Handles both named entities (&quot;, &amp;, etc.) and numeric entities (&#34;, &#x22;)
+ */
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    "&quot;": '"',
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&apos;": "'",
+    "&#39;": "'",
+  };
+
+  let decoded = text;
+  
+  // Replace named entities
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.replace(new RegExp(entity, "g"), char);
+  }
+  
+  // Replace numeric entities (decimal like &#34;)
+  decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
+    return String.fromCharCode(parseInt(dec, 10));
+  });
+  
+  // Replace hexadecimal entities (like &#x22;)
+  decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+  
+  return decoded;
+}
+
+/**
  * Strip markdown formatting from text for plain text display
  * Uses react-markdown with plain text renderers to extract content
  */
@@ -37,8 +71,11 @@ export function stripMarkdown(text: string): string {
 
   // The markup will still have some HTML tags, so extract text content
   // and normalize whitespace
-  return markup
+  const cleaned = markup
     .replace(/<[^>]*>/g, "") // Remove any remaining HTML tags
     .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
+  
+  // Decode HTML entities
+  return decodeHtmlEntities(cleaned);
 }
