@@ -3,66 +3,18 @@ import type { Components } from "react-markdown";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * Decode HTML entities in text
- * Handles both named entities (&quot;, &amp;, etc.) and numeric entities (&#34;, &#x22;)
+ * Decode HTML entities using the browser's DOM API
+ * Works in client-side environments (not server-side)
  */
 function decodeHtmlEntities(text: string): string {
-  const entities: Record<string, string> = {
-    "&quot;": '"',
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&apos;": "'",
-    "&#39;": "'",
-  };
-
-  // Helper to validate Unicode code points
-  const isValidUnicodeCodePoint = (codePoint: number): boolean => {
-    return !Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff;
-  };
-
-  let decoded = text;
+  // Only works in browser environment
+  if (typeof document === "undefined") {
+    return text;
+  }
   
-  // Replace named entities using a single regex with all entities
-  // Pattern: /&quot;|&amp;|&lt;|&gt;|&apos;|&#39;/g
-  // Explanation: Matches any of the named entities literally using alternation (|)
-  // Each special regex character is escaped with backslash (e.g., & becomes \&)
-  // Examples: "&quot;" → '"', "&amp;" → "&", "&lt;" → "<"
-  const entityPattern = new RegExp(
-    Object.keys(entities)
-      .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-      .join("|"),
-    "g"
-  );
-  decoded = decoded.replace(entityPattern, (match) => entities[match]);
-  
-  // Replace decimal numeric entities (e.g., &#34; → ")
-  // Pattern: /&#(\d+);/g
-  // Explanation: Matches "&#" followed by one or more digits (\d+) and ending with ";"
-  // Capture group (\d+) extracts the numeric code for conversion
-  // Examples: "&#34;" → '"', "&#65;" → "A", "&#8364;" → "€"
-  decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
-    const codePoint = parseInt(dec, 10);
-    if (isValidUnicodeCodePoint(codePoint)) {
-      return String.fromCodePoint(codePoint);
-    }
-    return match; // Return original if invalid
-  });
-  
-  // Replace hexadecimal numeric entities (e.g., &#x22; → ")
-  // Pattern: /&#x([0-9A-Fa-f]+);/g
-  // Explanation: Matches "&#x" followed by one or more hex digits ([0-9A-Fa-f]+) and ";"
-  // Capture group ([0-9A-Fa-f]+) extracts the hex code for conversion
-  // Examples: "&#x22;" → '"', "&#x41;" → "A", "&#x20AC;" → "€"
-  decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
-    const codePoint = parseInt(hex, 16);
-    if (isValidUnicodeCodePoint(codePoint)) {
-      return String.fromCodePoint(codePoint);
-    }
-    return match; // Return original if invalid
-  });
-  
-  return decoded;
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
 }
 
 /**
