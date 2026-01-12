@@ -16,6 +16,11 @@ function decodeHtmlEntities(text: string): string {
     "&#39;": "'",
   };
 
+  // Helper to validate Unicode code points
+  const isValidUnicodeCodePoint = (codePoint: number): boolean => {
+    return !Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff;
+  };
+
   let decoded = text;
   
   // Replace named entities using a single regex with all entities
@@ -30,8 +35,7 @@ function decodeHtmlEntities(text: string): string {
   // Replace numeric entities (decimal like &#34;)
   decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
     const codePoint = parseInt(dec, 10);
-    // Validate Unicode range (0-0x10FFFF)
-    if (!Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+    if (isValidUnicodeCodePoint(codePoint)) {
       return String.fromCodePoint(codePoint);
     }
     return match; // Return original if invalid
@@ -40,8 +44,7 @@ function decodeHtmlEntities(text: string): string {
   // Replace hexadecimal entities (like &#x22;)
   decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
     const codePoint = parseInt(hex, 16);
-    // Validate Unicode range (0-0x10FFFF)
-    if (!Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+    if (isValidUnicodeCodePoint(codePoint)) {
       return String.fromCodePoint(codePoint);
     }
     return match; // Return original if invalid
