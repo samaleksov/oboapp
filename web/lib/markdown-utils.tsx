@@ -24,6 +24,10 @@ function decodeHtmlEntities(text: string): string {
   let decoded = text;
   
   // Replace named entities using a single regex with all entities
+  // Pattern: /&quot;|&amp;|&lt;|&gt;|&apos;|&#39;/g
+  // Explanation: Matches any of the named entities literally using alternation (|)
+  // Each special regex character is escaped with backslash (e.g., & becomes \&)
+  // Examples: "&quot;" → '"', "&amp;" → "&", "&lt;" → "<"
   const entityPattern = new RegExp(
     Object.keys(entities)
       .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
@@ -32,7 +36,11 @@ function decodeHtmlEntities(text: string): string {
   );
   decoded = decoded.replace(entityPattern, (match) => entities[match]);
   
-  // Replace numeric entities (decimal like &#34;)
+  // Replace decimal numeric entities (e.g., &#34; → ")
+  // Pattern: /&#(\d+);/g
+  // Explanation: Matches "&#" followed by one or more digits (\d+) and ending with ";"
+  // Capture group (\d+) extracts the numeric code for conversion
+  // Examples: "&#34;" → '"', "&#65;" → "A", "&#8364;" → "€"
   decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
     const codePoint = parseInt(dec, 10);
     if (isValidUnicodeCodePoint(codePoint)) {
@@ -41,7 +49,11 @@ function decodeHtmlEntities(text: string): string {
     return match; // Return original if invalid
   });
   
-  // Replace hexadecimal entities (like &#x22;)
+  // Replace hexadecimal numeric entities (e.g., &#x22; → ")
+  // Pattern: /&#x([0-9A-Fa-f]+);/g
+  // Explanation: Matches "&#x" followed by one or more hex digits ([0-9A-Fa-f]+) and ";"
+  // Capture group ([0-9A-Fa-f]+) extracts the hex code for conversion
+  // Examples: "&#x22;" → '"', "&#x41;" → "A", "&#x20AC;" → "€"
   decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
     const codePoint = parseInt(hex, 16);
     if (isValidUnicodeCodePoint(codePoint)) {
