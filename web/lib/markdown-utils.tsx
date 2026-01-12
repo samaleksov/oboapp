@@ -3,18 +3,33 @@ import type { Components } from "react-markdown";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * Decode HTML entities using the browser's DOM API
- * Works in client-side environments (not server-side)
+ * Decode common HTML entities in text
+ * Uses simple string replacements for readability
  */
 function decodeHtmlEntities(text: string): string {
-  // Only works in browser environment
-  if (typeof document === "undefined") {
-    return text;
-  }
+  let result = text;
   
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = text;
-  return textarea.value;
+  // Replace common named entities
+  result = result.replace(/&quot;/g, '"');
+  result = result.replace(/&amp;/g, '&');
+  result = result.replace(/&lt;/g, '<');
+  result = result.replace(/&gt;/g, '>');
+  result = result.replace(/&apos;/g, "'");
+  result = result.replace(/&#39;/g, "'");
+  
+  // Replace decimal numeric entities (e.g., &#34; → ")
+  result = result.replace(/&#(\d+);/g, (_match, decimalCode) => {
+    const codePoint = Number(decimalCode);
+    return String.fromCodePoint(codePoint);
+  });
+  
+  // Replace hexadecimal numeric entities (e.g., &#x22; → ")
+  result = result.replace(/&#x([0-9A-Fa-f]+);/g, (_match, hexCode) => {
+    const codePoint = Number.parseInt(hexCode, 16);
+    return String.fromCodePoint(codePoint);
+  });
+  
+  return result;
 }
 
 /**
