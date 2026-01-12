@@ -129,5 +129,12 @@ describe("stripMarkdown", () => {
       expect(stripMarkdown("**Bold &quot;text&quot;**")).toBe('Bold "text"');
       expect(stripMarkdown("*Italic &amp; bold*")).toBe("Italic & bold");
     });
+
+    it("should handle valid numeric entities at Unicode boundaries", () => {
+      // Test entities at the edge of valid Unicode range
+      expect(stripMarkdown("Valid &#1114111; entity")).toContain("entity");
+      // Very small valid code point
+      expect(stripMarkdown("Valid &#65; entity")).toBe("Valid A entity");
+    });
   });
 });

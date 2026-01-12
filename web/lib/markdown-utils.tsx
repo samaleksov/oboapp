@@ -18,19 +18,33 @@ function decodeHtmlEntities(text: string): string {
 
   let decoded = text;
   
-  // Replace named entities
-  for (const [entity, char] of Object.entries(entities)) {
-    decoded = decoded.replace(new RegExp(entity, "g"), char);
-  }
+  // Replace named entities using a single regex with all entities
+  const entityPattern = new RegExp(
+    Object.keys(entities)
+      .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|"),
+    "g"
+  );
+  decoded = decoded.replace(entityPattern, (match) => entities[match]);
   
   // Replace numeric entities (decimal like &#34;)
   decoded = decoded.replace(/&#(\d+);/g, (match, dec) => {
-    return String.fromCharCode(parseInt(dec, 10));
+    const codePoint = parseInt(dec, 10);
+    // Validate Unicode range (0-0x10FFFF)
+    if (!Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+      return String.fromCodePoint(codePoint);
+    }
+    return match; // Return original if invalid
   });
   
   // Replace hexadecimal entities (like &#x22;)
   decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
-    return String.fromCharCode(parseInt(hex, 16));
+    const codePoint = parseInt(hex, 16);
+    // Validate Unicode range (0-0x10FFFF)
+    if (!Number.isNaN(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+      return String.fromCodePoint(codePoint);
+    }
+    return match; // Return original if invalid
   });
   
   return decoded;
